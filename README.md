@@ -1,11 +1,12 @@
 # Agentic Sponsorship Automation
 
-Creator Sponsorship Segment MAS is a locally hosted multi-agent system for generating creator-style sponsorship segments for YouTube videos. The current implementation includes the Research Agent, a typed shared state model, a PDF sponsor brief reader, a web brand research tool, and a runnable CLI workflow.
+Creator Sponsorship Segment MAS is a locally hosted multi-agent system for generating creator-style sponsorship segments for YouTube videos. The current implementation includes the Research Agent, Creator Style Agent, Sponsorship Writer Agent, a typed shared state model, custom tools, and a runnable CLI workflow.
 
 ## Current Scope
 
 - Research Agent that gathers sponsor information from PDFs and the web
 - Creator Style Agent that analyzes creator transcript samples
+- Sponsorship Writer Agent that drafts a creator-style sponsorship segment
 - Shared `MASState` structure for multi-agent handoff
 - `read_pdf_brief_tool` for extracting relevant passages from sponsor briefs
 - `web_brand_research_tool` for collecting structured facts from preferred URLs and web search
@@ -18,12 +19,14 @@ app/
   agents/
     creator_style_agent.py
     research_agent.py
+    sponsorship_writer_agent.py
   graph/
     state.py
     workflow.py
   tools/
     creator_style_analysis_tool.py
     pdf_brief_reader_tool.py
+    sponsorship_segment_writer_tool.py
     web_brand_research_tool.py
 main.py
 requirements.txt
@@ -108,21 +111,22 @@ The command prints the full workflow state as JSON, including:
 - input fields such as sponsor name and campaign topic
 - Research Agent execution logs
 - Creator Style Agent execution logs
+- Sponsorship Writer Agent execution logs
 - structured `sponsor_research` output
 - structured `creator_style_profile` output when samples are provided
+- structured `sponsorship_draft` output
 - source snippets and source links
 - identified research gaps
 
 ## Current Limitations
 
-- The current workflow includes Research and Creator Style analysis only
+- The current workflow includes Research, Creator Style analysis, and draft writing
 - PDF extraction uses heuristics and works best on text-based PDFs
 - Web research currently uses lightweight scraping and heuristic fact extraction
 - Search results may include non-official pages if they appear relevant
 
 ## Next Planned Components
 
-- Sponsorship Writer Agent
 - Compliance and Review Agent
 - Full LangGraph orchestration
 - automated tests and evaluation scripts
