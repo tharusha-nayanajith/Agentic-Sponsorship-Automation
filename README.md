@@ -1,12 +1,13 @@
 # Agentic Sponsorship Automation
 
-Creator Sponsorship Segment MAS is a locally hosted multi-agent system for generating creator-style sponsorship segments for YouTube videos. The current implementation includes the Research Agent, Creator Style Agent, Sponsorship Writer Agent, a typed shared state model, custom tools, and a runnable CLI workflow.
+Creator Sponsorship Segment MAS is a locally hosted multi-agent system for generating creator-style sponsorship segments for YouTube videos. The current implementation includes the Research Agent, Creator Style Agent, Sponsorship Writer Agent, Compliance Review Agent, a typed shared state model, custom tools, and a runnable CLI workflow.
 
 ## Current Scope
 
 - Research Agent that gathers sponsor information from PDFs and the web
 - Creator Style Agent that analyzes creator transcript samples
 - Sponsorship Writer Agent that drafts a creator-style sponsorship segment
+- Compliance Review Agent that validates the draft and produces a final reviewed segment
 - Shared `MASState` structure for multi-agent handoff
 - `read_pdf_brief_tool` for extracting relevant passages from sponsor briefs
 - `web_brand_research_tool` for collecting structured facts from preferred URLs and web search
@@ -17,6 +18,7 @@ Creator Sponsorship Segment MAS is a locally hosted multi-agent system for gener
 ```text
 app/
   agents/
+    compliance_review_agent.py
     creator_style_agent.py
     research_agent.py
     sponsorship_writer_agent.py
@@ -24,6 +26,7 @@ app/
     state.py
     workflow.py
   tools/
+    compliance_review_tool.py
     creator_style_analysis_tool.py
     pdf_brief_reader_tool.py
     sponsorship_segment_writer_tool.py
@@ -112,22 +115,24 @@ The command prints the full workflow state as JSON, including:
 - Research Agent execution logs
 - Creator Style Agent execution logs
 - Sponsorship Writer Agent execution logs
+- Compliance Review Agent execution logs
 - structured `sponsor_research` output
 - structured `creator_style_profile` output when samples are provided
 - structured `sponsorship_draft` output
+- structured `compliance_report` output
+- structured `final_sponsorship_segment` output
 - source snippets and source links
 - identified research gaps
 
 ## Current Limitations
 
-- The current workflow includes Research, Creator Style analysis, and draft writing
+- The current workflow includes Research, Creator Style analysis, draft writing, and compliance review
 - PDF extraction uses heuristics and works best on text-based PDFs
 - Web research currently uses lightweight scraping and heuristic fact extraction
 - Search results may include non-official pages if they appear relevant
 
 ## Next Planned Components
 
-- Compliance and Review Agent
 - Full LangGraph orchestration
 - automated tests and evaluation scripts
 
