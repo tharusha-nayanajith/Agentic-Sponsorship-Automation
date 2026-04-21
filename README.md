@@ -5,6 +5,7 @@ Creator Sponsorship Segment MAS is a locally hosted multi-agent system for gener
 ## Current Scope
 
 - Research Agent that gathers sponsor information from PDFs and the web
+- Creator Style Agent that analyzes creator transcript samples
 - Shared `MASState` structure for multi-agent handoff
 - `read_pdf_brief_tool` for extracting relevant passages from sponsor briefs
 - `web_brand_research_tool` for collecting structured facts from preferred URLs and web search
@@ -15,11 +16,13 @@ Creator Sponsorship Segment MAS is a locally hosted multi-agent system for gener
 ```text
 app/
   agents/
+    creator_style_agent.py
     research_agent.py
   graph/
     state.py
     workflow.py
   tools/
+    creator_style_analysis_tool.py
     pdf_brief_reader_tool.py
     web_brand_research_tool.py
 main.py
@@ -104,20 +107,21 @@ The command prints the full workflow state as JSON, including:
 
 - input fields such as sponsor name and campaign topic
 - Research Agent execution logs
+- Creator Style Agent execution logs
 - structured `sponsor_research` output
+- structured `creator_style_profile` output when samples are provided
 - source snippets and source links
 - identified research gaps
 
 ## Current Limitations
 
-- Only the Research Agent is implemented so far
+- The current workflow includes Research and Creator Style analysis only
 - PDF extraction uses heuristics and works best on text-based PDFs
 - Web research currently uses lightweight scraping and heuristic fact extraction
 - Search results may include non-official pages if they appear relevant
 
 ## Next Planned Components
 
-- Creator Style Agent
 - Sponsorship Writer Agent
 - Compliance and Review Agent
 - Full LangGraph orchestration
@@ -131,4 +135,3 @@ This repository is being built toward the CTSE Assignment 2 requirement for a lo
 - custom Python tools
 - explicit shared state management
 - observability through agent logs
-

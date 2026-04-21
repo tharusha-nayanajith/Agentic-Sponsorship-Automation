@@ -11,10 +11,10 @@ from app.graph.workflow import run_research_workflow
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments for the current research workflow."""
+    """Parse command-line arguments for the current workflow."""
 
     parser = argparse.ArgumentParser(
-        description="Run the Research Agent for the Creator Sponsorship Segment MAS."
+        description="Run the current Creator Sponsorship Segment MAS workflow."
     )
     parser.add_argument("--sponsor-name", required=True, help="Sponsor brand name.")
     parser.add_argument(
@@ -74,7 +74,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def build_initial_state(args: argparse.Namespace) -> MASState:
-    """Build the initial typed state for the research workflow."""
+    """Build the initial typed state for the current workflow."""
 
     creator_samples = [_resolve_creator_sample(sample) for sample in args.creator_samples]
 
