@@ -66,12 +66,20 @@ def run_sponsorship_writer_agent(state: MASState) -> MASState:
     logs.append(
         _log(
             step="draft_generation",
-            tool_used="write_sponsorship_segment_tool",
+            tool_used=(
+                "write_sponsorship_segment_tool (ollama)"
+                if result.llm_used
+                else "write_sponsorship_segment_tool (fallback)"
+            ),
             status="success" if result.success else "failed",
             message=(
-                "Sponsorship draft generated successfully."
-                if result.success
-                else "Sponsorship draft generation failed."
+                "Sponsorship draft generated successfully with Ollama."
+                if result.success and result.llm_used
+                else (
+                    "Sponsorship draft generated successfully with fallback writer."
+                    if result.success
+                    else "Sponsorship draft generation failed."
+                )
             ),
         )
     )

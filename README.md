@@ -144,3 +144,32 @@ This repository is being built toward the CTSE Assignment 2 requirement for a lo
 - custom Python tools
 - explicit shared state management
 - observability through agent logs
+
+## Ollama Integration
+
+The Sponsorship Writer Agent now prefers a local Ollama model and falls back to the deterministic writer if Ollama is unavailable.
+
+Recommended local model:
+
+- `qwen2.5:3b` for lightweight testing
+- `qwen2.5:7b` later if you want stronger writing quality
+
+Example environment setup in Git Bash:
+
+```bash
+export OLLAMA_BASE_URL="http://localhost:11434"
+export OLLAMA_MODEL="qwen2.5:3b"
+```
+
+Example environment setup in PowerShell:
+
+```powershell
+$env:OLLAMA_BASE_URL="http://localhost:11434"
+$env:OLLAMA_MODEL="qwen2.5:3b"
+```
+
+Quick Ollama client smoke test:
+
+```bash
+./.venv/Scripts/python.exe -c "from app.llm.ollama_client import OllamaClient; c = OllamaClient(); print(c.health_check()); print(c.list_models()); print(c.generate('Write one short sponsor intro for Clerk.'))"
+```
