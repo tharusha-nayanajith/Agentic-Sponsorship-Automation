@@ -107,6 +107,21 @@ You can save the resulting JSON state to a file:
   --output research-output.json
 ```
 
+## Run the Streamlit Demo
+
+You can also run a simple demo UI for the viva:
+
+```bash
+./.venv/Scripts/python.exe -m streamlit run streamlit_app.py
+```
+
+The Streamlit UI lets you:
+
+- enter sponsor name, topic, URLs, and creator sample
+- upload sponsor brief PDFs
+- run the full workflow
+- present the final segment, logs, compliance report, and raw state in separate tabs
+
 ## What the CLI Returns
 
 The command prints the full workflow state as JSON, including:
