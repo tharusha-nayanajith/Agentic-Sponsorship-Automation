@@ -8,11 +8,8 @@ from uuid import uuid4
 
 import streamlit as st
 
-from app.agents.compliance_review_agent import run_compliance_review_agent
-from app.agents.creator_style_agent import run_creator_style_agent
-from app.agents.research_agent import run_research_agent
-from app.agents.sponsorship_writer_agent import run_sponsorship_writer_agent
 from app.graph.state import MASState
+from app.graph.workflow import run_research_workflow
 
 
 UPLOAD_DIR = Path(".streamlit_uploads")
@@ -116,7 +113,10 @@ def main() -> None:
         pdf_paths=pdf_paths,
     )
 
-    final_state = _run_demo_workflow(initial_state)
+    with st.status("Running LangGraph workflow...", expanded=True) as status:
+        status.write("Executing graph nodes and conditional routing...")
+        final_state = run_research_workflow(initial_state)
+        status.update(label="LangGraph workflow complete", state="complete", expanded=False)
 
     _render_results(final_state)
 
@@ -144,6 +144,7 @@ def _build_initial_state(
         "website_urls": _split_lines(website_urls_text),
         "creator_samples": [creator_samples_text.strip()] if creator_samples_text.strip() else [],
         "required_talking_points": _split_lines(talking_points_text),
+        "revision_count": 0,
         "logs": [],
         "tool_traces": [],
     }
@@ -169,28 +170,6 @@ def _persist_uploaded_pdfs(uploaded_pdfs: list | None) -> list[str]:
         target.write_bytes(uploaded_file.getbuffer())
         saved_paths.append(str(target.resolve()))
     return saved_paths
-
-
-def _run_demo_workflow(initial_state: MASState) -> MASState:
-    """Run the workflow step by step with visible Streamlit progress."""
-
-    status = st.status("Running workflow...", expanded=True)
-    current_state = initial_state
-
-    stages = [
-        ("Research Agent", run_research_agent),
-        ("Creator Style Agent", run_creator_style_agent),
-        ("Sponsorship Writer Agent", run_sponsorship_writer_agent),
-        ("Compliance Review Agent", run_compliance_review_agent),
-    ]
-
-    for label, runner in stages:
-        status.write(f"Running {label}...")
-        current_state = runner(current_state)
-        status.write(f"Completed {label}.")
-
-    status.update(label="Workflow complete", state="complete", expanded=False)
-    return current_state
 
 
 def _render_results(final_state: MASState) -> None:

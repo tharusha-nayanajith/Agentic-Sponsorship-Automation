@@ -41,6 +41,7 @@ def run_sponsorship_writer_agent(state: MASState) -> MASState:
         return updated_state
 
     style_profile = state.get("creator_style_profile", {})
+    compliance_report = state.get("compliance_report", {})
     result = write_sponsorship_segment_tool(
         SponsorshipSegmentWriterInput(
             sponsor_name=state["sponsor_name"],
@@ -63,6 +64,7 @@ def run_sponsorship_writer_agent(state: MASState) -> MASState:
             ),
             vocabulary_patterns=style_profile.get("vocabulary_patterns", []),
             do_not_mimic=style_profile.get("do_not_mimic", []),
+            revision_notes=compliance_report.get("revision_notes", []),
         )
     )
     tool_traces.append(
@@ -77,7 +79,8 @@ def run_sponsorship_writer_agent(state: MASState) -> MASState:
             input_summary=(
                 f"facts={len(sponsor_research['verified_facts'])}; "
                 f"required_mentions={len(sponsor_research['required_mentions'])}; "
-                f"style_profile={'yes' if bool(style_profile) else 'no'}"
+                f"style_profile={'yes' if bool(style_profile) else 'no'}; "
+                f"revision_count={state.get('revision_count', 0)}"
             ),
             output_summary=(
                 f"draft_chars={len(result.sponsorship_segment)}; llm_used={result.llm_used}"

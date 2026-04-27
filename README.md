@@ -10,6 +10,7 @@ Creator Sponsorship Segment MAS is a locally hosted multi-agent system for gener
 - Compliance Review Agent that validates the draft and produces a final reviewed segment
 - Shared `MASState` structure for multi-agent handoff
 - LangGraph orchestration for agent sequencing
+- LangGraph conditional routing for one compliance-driven rewrite pass
 - `read_pdf_brief_tool` for extracting relevant passages from sponsor briefs
 - `web_brand_research_tool` for collecting structured facts from preferred URLs and web search
 - CLI entry point for running the current research workflow end to end

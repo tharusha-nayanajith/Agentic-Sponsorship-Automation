@@ -42,6 +42,10 @@ class SponsorshipSegmentWriterInput(BaseModel):
     transition_style: str = Field(default="blended conversational transition")
     vocabulary_patterns: list[str] = Field(default_factory=list)
     do_not_mimic: list[str] = Field(default_factory=list)
+    revision_notes: list[str] = Field(
+        default_factory=list,
+        description="Compliance revision notes from a previous failed draft.",
+    )
 
 
 class SponsorshipSegmentWriterOutput(BaseModel):
@@ -175,6 +179,7 @@ def _build_ollama_prompt(
     vocab_text = ", ".join(input_data.vocabulary_patterns[:6]) or "none"
     avoid_text = "\n".join(f"- {item}" for item in input_data.do_not_mimic[:5]) or "- No extra restrictions provided."
     verified_facts_text = "\n".join(f"- {item}" for item in input_data.verified_facts[:5]) or "- Use only the sponsor summary."
+    revision_notes_text = "\n".join(f"- {item}" for item in input_data.revision_notes[:5]) or "- No revision notes provided."
 
     return (
         f"Write a YouTube sponsorship segment for {input_data.sponsor_name}.\n\n"
@@ -193,6 +198,7 @@ def _build_ollama_prompt(
         f"Offer details:\n{offers_text}\n\n"
         f"Forbidden claims or phrasing:\n{forbidden_text}\n\n"
         f"Do not mimic:\n{avoid_text}\n\n"
+        f"Revision notes from the last review:\n{revision_notes_text}\n\n"
         "Output format requirements:\n"
         "- Write exactly 4 short paragraphs.\n"
         "- Paragraph 1: explicit sponsor transition and disclosure.\n"
@@ -208,6 +214,7 @@ def _build_ollama_prompt(
         "- Do not say phrases such as 'the vibe here should feel', 'the short version is this', 'no-brainer', or 'let's straight to it'.\n"
         "- Do not invent offers, discounts, or claims.\n"
         "- Keep it between 90 and 140 words.\n"
+        "- If revision notes are provided, fix those problems explicitly.\n"
     )
 
 

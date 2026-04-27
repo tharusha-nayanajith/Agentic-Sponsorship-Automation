@@ -112,6 +112,8 @@ def run_compliance_review_agent(state: MASState) -> MASState:
 
     updated_state["compliance_report"] = compliance_report
     updated_state["final_sponsorship_segment"] = result.cleaned_segment
+    if not result.approved:
+        updated_state["revision_count"] = state.get("revision_count", 0) + 1
 
     logs.append(
         _log(

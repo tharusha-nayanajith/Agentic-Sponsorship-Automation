@@ -87,5 +87,6 @@ class MASState(TypedDict):
     sponsorship_draft: NotRequired[str]
     compliance_report: NotRequired[ComplianceReport]
     final_sponsorship_segment: NotRequired[str]
+    revision_count: int
     logs: list[AgentLog]
     tool_traces: list[ToolTrace]
