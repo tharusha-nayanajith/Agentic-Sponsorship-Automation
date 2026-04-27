@@ -106,6 +106,7 @@ def web_brand_research_tool(
             session=session,
             url=url,
             keywords=keywords,
+            sponsor_name=input_data.sponsor_name,
         )
         if page_result is None:
             errors.append(f"Failed to extract useful content from {url}")
@@ -173,6 +174,7 @@ def _fetch_and_extract_page(
     session: requests.Session,
     url: str,
     keywords: set[str],
+    sponsor_name: str,
 ) -> tuple[str, str, list[str], str] | None:
     """Fetch a page and extract a short structured research summary."""
 
@@ -191,7 +193,9 @@ def _fetch_and_extract_page(
         for tag in soup.find_all(tag_name):
             tag.decompose()
 
-    title = _clean_text(soup.title.get_text(" ", strip=True) if soup.title else url)
+    title = _clean_title(
+        _clean_text(soup.title.get_text(" ", strip=True) if soup.title else url)
+    )
     text_blocks = _extract_text_blocks(soup)
     ranked_blocks = _rank_text_blocks(text_blocks, keywords)
     if not ranked_blocks:
@@ -199,7 +203,11 @@ def _fetch_and_extract_page(
 
     top_blocks = ranked_blocks[:3]
     summary = _build_summary(title=title, blocks=top_blocks)
-    facts = _extract_verified_facts(top_blocks, keywords)
+    facts = _extract_verified_facts(
+        blocks=top_blocks,
+        keywords=keywords,
+        sponsor_name=sponsor_name,
+    )
     snippet = _build_snippet(top_blocks[0])
 
     return title, summary, facts, snippet
@@ -212,7 +220,7 @@ def _extract_text_blocks(soup: BeautifulSoup) -> list[str]:
     selectors = ("h1", "h2", "h3", "p", "li")
     for element in soup.find_all(selectors):
         text = _clean_text(element.get_text(" ", strip=True))
-        if _is_meaningful_block(text):
+        if _is_meaningful_block(text) and not _looks_like_junk_text(text):
             blocks.append(text)
     return _dedupe_preserve_order(blocks)
 
@@ -241,21 +249,27 @@ def _build_summary(title: str, blocks: list[str]) -> str:
     """Build a compact summary line for downstream use."""
 
     lead = blocks[0]
+    if _looks_like_junk_text(title):
+        return _build_snippet(lead, max_chars=220)
     return _build_snippet(f"{title}: {lead}", max_chars=220)
 
 
-def _extract_verified_facts(blocks: list[str], keywords: set[str]) -> list[str]:
+def _extract_verified_facts(
+    blocks: list[str],
+    keywords: set[str],
+    sponsor_name: str,
+) -> list[str]:
     """Turn top-ranked blocks into short factual statements."""
 
     facts: list[str] = []
     for block in blocks:
         if _block_score(block, keywords) <= 0:
             continue
-        facts.extend(_sentence_candidates(block))
+        facts.extend(_sentence_candidates(block, sponsor_name=sponsor_name))
     return _dedupe_preserve_order(facts[:5])
 
 
-def _sentence_candidates(block: str) -> list[str]:
+def _sentence_candidates(block: str, sponsor_name: str) -> list[str]:
     """Split a text block into concise candidate facts."""
 
     sentences = re.split(r"(?<=[.!?])\s+", block)
@@ -265,6 +279,8 @@ def _sentence_candidates(block: str) -> list[str]:
         for sentence in cleaned
         if _is_meaningful_block(sentence)
         and not _looks_like_testimonial_metadata(sentence)
+        and not _looks_like_junk_text(sentence)
+        and _looks_like_grounded_fact(sentence, sponsor_name=sponsor_name)
     ]
 
 
@@ -326,6 +342,13 @@ def _clean_text(text: str) -> str:
     return normalized
 
 
+def _clean_title(text: str) -> str:
+    """Trim obvious site-brand suffixes from page titles."""
+
+    cleaned = re.sub(r"\s+[|\-–]\s+[^|\-–]{1,40}$", "", text).strip()
+    return cleaned or text
+
+
 def _canonicalize_url(url: str) -> str:
     """Normalize obvious duplicate URL forms such as trailing slashes."""
 
@@ -364,6 +387,64 @@ def _is_meaningful_block(text: str) -> bool:
         return False
     alpha_words = re.findall(r"[A-Za-z]{3,}", text)
     return len(alpha_words) >= 4
+
+
+def _looks_like_grounded_fact(text: str, sponsor_name: str) -> bool:
+    """Keep sentence-like content that looks grounded in the sponsor/topic."""
+
+    lowered = text.lower()
+    sponsor_lower = sponsor_name.lower()
+    factual_markers = (
+        sponsor_lower,
+        "supports",
+        "provides",
+        "offers",
+        "helps",
+        "includes",
+        "lets",
+        "works with",
+        "is available",
+        "can be used",
+        "developers",
+        "customers",
+        "teams",
+    )
+    if any(marker in lowered for marker in factual_markers):
+        return True
+    return False
+
+
+def _looks_like_junk_text(text: str) -> bool:
+    """Reject navigation, headline, and metadata fragments."""
+
+    lowered = text.lower().strip()
+    junk_markers = (
+        "opens in a new window",
+        "sign up",
+        "log in",
+        "skip to content",
+        "table of contents",
+        "privacy policy",
+        "terms of use",
+        "all rights reserved",
+        "follow us",
+        "updated ",
+        "step1",
+        "step 1",
+        "step2",
+        "step 2",
+        "public official",
+        "commit activity",
+        "dev community",
+        "help center",
+    )
+    if any(marker in lowered for marker in junk_markers):
+        return True
+    if lowered.startswith(("foundation (", "welcome to ", "introducing ")):
+        return True
+    if re.fullmatch(r"[A-Za-z0-9 .,'’:/()\-]{1,80}", text) and ":" not in text and len(text.split()) <= 5:
+        return True
+    return False
 
 
 def _looks_like_testimonial_metadata(text: str) -> bool:

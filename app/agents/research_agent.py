@@ -216,13 +216,33 @@ def _build_summary(
 ) -> str:
     """Create a compact summary for downstream agents."""
 
-    if verified_facts:
-        return verified_facts[0]
+    for fact in verified_facts:
+        if _is_usable_summary_fact(fact, sponsor_name=sponsor_name):
+            return fact
 
-    if product_features:
-        return f"{sponsor_name} research collected around: {product_features[0]}."
+    for feature in product_features:
+        if _is_usable_summary_fact(feature, sponsor_name=sponsor_name):
+            return f"{sponsor_name} research collected around: {feature}."
 
     return f"No verified summary is available yet for {sponsor_name}."
+
+
+def _is_usable_summary_fact(text: str, sponsor_name: str) -> bool:
+    """Reject obviously noisy facts when choosing the sponsor summary."""
+
+    lowered = text.lower()
+    if sponsor_name.lower() not in lowered:
+        return False
+    banned_markers = (
+        "opens in a new window",
+        "dev community",
+        "help center",
+        "updated ",
+        "step 1",
+        "step1",
+        "foundation (",
+    )
+    return not any(marker in lowered for marker in banned_markers)
 
 
 def _dedupe_preserve_order(values: Iterable[str]) -> list[str]:
