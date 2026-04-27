@@ -193,3 +193,17 @@ Quick Ollama client smoke test:
 ```bash
 ./.venv/Scripts/python.exe -c "from app.llm.ollama_client import OllamaClient; c = OllamaClient(); print(c.health_check()); print(c.list_models()); print(c.generate('Write one short sponsor intro for Clerk.'))"
 ```
+
+## Tests and Evaluation
+
+Run the agent-level tests:
+
+```bash
+./.venv/Scripts/python.exe -m pytest tests
+```
+
+Run the end-to-end evaluation harness:
+
+```bash
+./.venv/Scripts/python.exe evaluations/run_evaluation.py
+```
