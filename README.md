@@ -1,6 +1,6 @@
 # Agentic Sponsorship Automation
 
-Creator Sponsorship Segment MAS is a locally hosted multi-agent system for generating creator-style sponsorship segments for YouTube videos. The current implementation includes the Research Agent, Creator Style Agent, Sponsorship Writer Agent, Compliance Review Agent, a typed shared state model, custom tools, and a runnable CLI workflow.
+Creator Sponsorship Segment MAS is a locally hosted multi-agent system for generating creator-style sponsorship segments for YouTube videos. The current implementation includes the Research Agent, Creator Style Agent, Sponsorship Writer Agent, Compliance Review Agent, a typed shared state model, custom tools, LangGraph orchestration, and a runnable CLI workflow.
 
 ## Current Scope
 
@@ -9,6 +9,7 @@ Creator Sponsorship Segment MAS is a locally hosted multi-agent system for gener
 - Sponsorship Writer Agent that drafts a creator-style sponsorship segment
 - Compliance Review Agent that validates the draft and produces a final reviewed segment
 - Shared `MASState` structure for multi-agent handoff
+- LangGraph orchestration for agent sequencing
 - `read_pdf_brief_tool` for extracting relevant passages from sponsor briefs
 - `web_brand_research_tool` for collecting structured facts from preferred URLs and web search
 - CLI entry point for running the current research workflow end to end
@@ -23,6 +24,7 @@ app/
     research_agent.py
     sponsorship_writer_agent.py
   graph/
+    langgraph_workflow.py
     state.py
     workflow.py
   tools/
@@ -157,6 +159,7 @@ The command prints the full workflow state as JSON, including:
 This repository is being built toward the CTSE Assignment 2 requirement for a locally hosted Multi-Agent System using:
 
 - multiple collaborating agents
+- LangGraph for orchestration
 - custom Python tools
 - explicit shared state management
 - observability through agent logs
