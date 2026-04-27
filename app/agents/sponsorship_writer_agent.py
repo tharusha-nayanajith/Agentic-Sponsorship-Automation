@@ -46,6 +46,7 @@ def run_sponsorship_writer_agent(state: MASState) -> MASState:
             target_audience=state["target_audience"],
             tone_goal=state["tone_goal"],
             sponsor_summary=sponsor_research["sponsor_summary"],
+            verified_facts=sponsor_research["verified_facts"],
             product_features=sponsor_research["product_features"],
             offer_details=sponsor_research["offer_details"],
             required_mentions=sponsor_research["required_mentions"],

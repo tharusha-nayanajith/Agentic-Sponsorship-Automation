@@ -15,6 +15,10 @@ class SponsorshipSegmentWriterInput(BaseModel):
     target_audience: str = Field(..., description="Target audience for the segment.")
     tone_goal: str = Field(..., description="Desired tone for the generated segment.")
     sponsor_summary: str = Field(..., description="Compact sponsor summary.")
+    verified_facts: list[str] = Field(
+        default_factory=list,
+        description="Cleaner verified sponsor facts collected during research.",
+    )
     product_features: list[str] = Field(
         default_factory=list,
         description="Structured sponsor/product feature highlights.",
@@ -63,6 +67,7 @@ def write_sponsorship_segment_tool(
 
     talking_points = _select_talking_points(
         required_mentions=input_data.required_mentions,
+        verified_facts=input_data.verified_facts,
         product_features=input_data.product_features,
         sponsor_summary=input_data.sponsor_summary,
     )
@@ -169,6 +174,7 @@ def _build_ollama_prompt(
     forbidden_text = "\n".join(f"- {item}" for item in input_data.forbidden_claims[:5]) or "- No forbidden claims provided."
     vocab_text = ", ".join(input_data.vocabulary_patterns[:6]) or "none"
     avoid_text = "\n".join(f"- {item}" for item in input_data.do_not_mimic[:5]) or "- No extra restrictions provided."
+    verified_facts_text = "\n".join(f"- {item}" for item in input_data.verified_facts[:5]) or "- Use only the sponsor summary."
 
     return (
         f"Write a YouTube sponsorship segment for {input_data.sponsor_name}.\n\n"
@@ -182,23 +188,32 @@ def _build_ollama_prompt(
         f"Transition style: {input_data.transition_style}\n"
         f"Vocabulary patterns to lightly echo: {vocab_text}\n\n"
         f"Sponsor summary:\n{input_data.sponsor_summary}\n\n"
+        f"Verified sponsor facts:\n{verified_facts_text}\n\n"
         f"Required points to cover:\n{points_text}\n\n"
         f"Offer details:\n{offers_text}\n\n"
         f"Forbidden claims or phrasing:\n{forbidden_text}\n\n"
         f"Do not mimic:\n{avoid_text}\n\n"
-        "Requirements:\n"
-        "- Start with a clear sponsor transition.\n"
-        "- Clearly disclose that it is a sponsor segment.\n"
+        "Output format requirements:\n"
+        "- Write exactly 4 short paragraphs.\n"
+        "- Paragraph 1: explicit sponsor transition and disclosure.\n"
+        "- Paragraph 2: why the product matters for the audience.\n"
+        "- Paragraph 3: 2 concrete grounded points based only on the verified facts above.\n"
+        "- Paragraph 4: CTA plus a short return to the main video.\n\n"
+        "Hard constraints:\n"
         "- Make it sound like spoken creator copy.\n"
-        "- Avoid bullet points.\n"
-        "- Avoid meta-writing phrases like 'the vibe here should feel' or 'the short version is this'.\n"
-        "- End with a short CTA and a return to the main topic.\n"
-        "- Keep it under 170 words.\n"
+        "- No bullet points.\n"
+        "- No markdown.\n"
+        "- No slogans.\n"
+        "- No fake enthusiasm like 'Hey there devs!' unless naturally justified.\n"
+        "- Do not say phrases such as 'the vibe here should feel', 'the short version is this', 'no-brainer', or 'let's straight to it'.\n"
+        "- Do not invent offers, discounts, or claims.\n"
+        "- Keep it between 90 and 140 words.\n"
     )
 
 
 def _select_talking_points(
     required_mentions: list[str],
+    verified_facts: list[str],
     product_features: list[str],
     sponsor_summary: str,
 ) -> list[str]:
@@ -206,6 +221,8 @@ def _select_talking_points(
 
     points: list[str] = []
     points.extend(required_mentions[:3])
+    if len(points) < 3:
+        points.extend(fact for fact in verified_facts[:5] if fact not in points)
     if len(points) < 3:
         points.extend(feature for feature in product_features[:5] if feature not in points)
     if not points and sponsor_summary:
@@ -296,4 +313,7 @@ def _clean_llm_output(text: str) -> str:
     cleaned = text.strip()
     cleaned = cleaned.replace("```", "").strip()
     cleaned = cleaned.replace("Sponsorship Segment:", "").strip()
+    cleaned = cleaned.replace("Paragraph 1:", "").replace("Paragraph 2:", "")
+    cleaned = cleaned.replace("Paragraph 3:", "").replace("Paragraph 4:", "")
+    cleaned = cleaned.replace("Hey there devs!", "").strip()
     return cleaned

@@ -138,6 +138,11 @@ def _detect_tone_mismatches(
         for phrase in ("the vibe here should feel", "short version is this")
     ):
         mismatches.append("Draft still contains meta-writing language instead of natural script wording.")
+    if any(
+        phrase in lowered
+        for phrase in ("hey there devs", "no-brainer", "actually, i think", "let's straight to it")
+    ):
+        mismatches.append("Draft still contains generic or awkward generated phrasing.")
     if any("profanity" in item.lower() for item in do_not_mimic) and any(
         token in lowered for token in ("fuck", "shit", "[ __ ]")
     ):
