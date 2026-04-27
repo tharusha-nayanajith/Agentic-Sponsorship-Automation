@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.graph.state import AgentLog, MASState
+from app.graph.state import AgentLog, MASState, ToolTrace
 from app.tools.sponsorship_segment_writer_tool import (
     SponsorshipSegmentWriterInput,
     write_sponsorship_segment_tool,
@@ -16,6 +16,7 @@ def run_sponsorship_writer_agent(state: MASState) -> MASState:
     """Generate a sponsorship segment draft from research and creator style."""
 
     logs = list(state.get("logs", []))
+    tool_traces = list(state.get("tool_traces", []))
     sponsor_research = state.get("sponsor_research")
 
     logs.append(
@@ -36,6 +37,7 @@ def run_sponsorship_writer_agent(state: MASState) -> MASState:
         )
         updated_state = dict(state)
         updated_state["logs"] = logs
+        updated_state["tool_traces"] = tool_traces
         return updated_state
 
     style_profile = state.get("creator_style_profile", {})
@@ -63,6 +65,27 @@ def run_sponsorship_writer_agent(state: MASState) -> MASState:
             do_not_mimic=style_profile.get("do_not_mimic", []),
         )
     )
+    tool_traces.append(
+        _tool_trace(
+            step="draft_generation",
+            tool_name=(
+                "write_sponsorship_segment_tool (ollama)"
+                if result.llm_used
+                else "write_sponsorship_segment_tool (fallback)"
+            ),
+            status="success" if result.success else "failed",
+            input_summary=(
+                f"facts={len(sponsor_research['verified_facts'])}; "
+                f"required_mentions={len(sponsor_research['required_mentions'])}; "
+                f"style_profile={'yes' if bool(style_profile) else 'no'}"
+            ),
+            output_summary=(
+                f"draft_chars={len(result.sponsorship_segment)}; llm_used={result.llm_used}"
+                if result.success
+                else (result.error_message or "Draft generation failed.")
+            ),
+        )
+    )
 
     logs.append(
         _log(
@@ -87,6 +110,7 @@ def run_sponsorship_writer_agent(state: MASState) -> MASState:
 
     updated_state = dict(state)
     updated_state["logs"] = logs
+    updated_state["tool_traces"] = tool_traces
     if result.success:
         updated_state["sponsorship_draft"] = result.sponsorship_segment
 
@@ -117,3 +141,22 @@ def _log(
     if tool_used:
         entry["tool_used"] = tool_used
     return entry
+
+
+def _tool_trace(
+    step: str,
+    tool_name: str,
+    status: str,
+    input_summary: str,
+    output_summary: str,
+) -> ToolTrace:
+    """Create a consistent Sponsorship Writer Agent tool trace entry."""
+
+    return {
+        "agent_name": SPONSORSHIP_WRITER_AGENT_NAME,
+        "step": step,
+        "tool_name": tool_name,
+        "status": status,
+        "input_summary": input_summary,
+        "output_summary": output_summary,
+    }

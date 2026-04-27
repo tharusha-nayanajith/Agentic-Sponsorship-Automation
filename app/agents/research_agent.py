@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from app.graph.state import AgentLog, MASState, SourceSnippet, SponsorResearch
+from app.graph.state import AgentLog, MASState, SourceSnippet, SponsorResearch, ToolTrace
 from app.tools.pdf_brief_reader_tool import PDFBriefReaderInput, read_pdf_brief_tool
 from app.tools.web_brand_research_tool import (
     WebBrandResearchInput,
@@ -19,6 +19,7 @@ def run_research_agent(state: MASState) -> MASState:
     """Build sponsor research from uploaded PDFs and optional web sources."""
 
     logs = list(state.get("logs", []))
+    tool_traces = list(state.get("tool_traces", []))
     pdf_outputs = []
     web_output = None
 
@@ -39,6 +40,21 @@ def run_research_agent(state: MASState) -> MASState:
             )
         )
         pdf_outputs.append(pdf_result)
+        tool_traces.append(
+            _tool_trace(
+                step="pdf_read",
+                tool_name="read_pdf_brief_tool",
+                status="success" if pdf_result.success else "failed",
+                input_summary=f"pdf_path={pdf_path}; topic={state['campaign_topic']}",
+                output_summary=(
+                    f"passages={len(pdf_result.relevant_passages)}; "
+                    f"required_mentions={len(pdf_result.required_mentions)}; "
+                    f"offers={len(pdf_result.offer_details)}"
+                    if pdf_result.success
+                    else (pdf_result.error_message or "PDF extraction failed.")
+                ),
+            )
+        )
         logs.append(
             _log(
                 step="pdf_read",
@@ -63,6 +79,22 @@ def run_research_agent(state: MASState) -> MASState:
                 sponsor_name=state["sponsor_name"],
                 query=query,
                 website_urls=state.get("website_urls", []),
+            )
+        )
+        tool_traces.append(
+            _tool_trace(
+                step="web_search",
+                tool_name="web_brand_research_tool",
+                status="success" if web_output.success else "failed",
+                input_summary=(
+                    f"query={query}; preferred_urls={len(state.get('website_urls', []))}"
+                ),
+                output_summary=(
+                    f"sources={len(web_output.source_links)}; "
+                    f"facts={len(web_output.verified_facts)}"
+                    if web_output.success
+                    else (web_output.error_message or "Web research failed.")
+                ),
             )
         )
         logs.append(
@@ -96,6 +128,7 @@ def run_research_agent(state: MASState) -> MASState:
     updated_state = dict(state)
     updated_state["sponsor_research"] = sponsor_research
     updated_state["logs"] = logs
+    updated_state["tool_traces"] = tool_traces
     return updated_state
 
 
@@ -276,3 +309,22 @@ def _log(
     if tool_used:
         entry["tool_used"] = tool_used
     return entry
+
+
+def _tool_trace(
+    step: str,
+    tool_name: str,
+    status: str,
+    input_summary: str,
+    output_summary: str,
+) -> ToolTrace:
+    """Create a consistent Research Agent tool trace entry."""
+
+    return {
+        "agent_name": RESEARCH_AGENT_NAME,
+        "step": step,
+        "tool_name": tool_name,
+        "status": status,
+        "input_summary": input_summary,
+        "output_summary": output_summary,
+    }

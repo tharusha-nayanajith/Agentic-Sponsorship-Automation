@@ -20,6 +20,7 @@ htmlcov/
 
 .uv-cache/
 .uv-cache-pdf/
+.streamlit_uploads/
 
 .idea/
 .vscode/

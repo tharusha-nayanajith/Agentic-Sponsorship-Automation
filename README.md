@@ -121,6 +121,7 @@ The Streamlit UI lets you:
 - upload sponsor brief PDFs
 - run the full workflow
 - present the final segment, logs, compliance report, and raw state in separate tabs
+- show an execution trace for each tool call with summarized input and output details
 
 ## What the CLI Returns
 

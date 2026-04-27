@@ -8,8 +8,11 @@ from uuid import uuid4
 
 import streamlit as st
 
+from app.agents.compliance_review_agent import run_compliance_review_agent
+from app.agents.creator_style_agent import run_creator_style_agent
+from app.agents.research_agent import run_research_agent
+from app.agents.sponsorship_writer_agent import run_sponsorship_writer_agent
 from app.graph.state import MASState
-from app.graph.workflow import run_research_workflow
 
 
 UPLOAD_DIR = Path(".streamlit_uploads")
@@ -113,8 +116,7 @@ def main() -> None:
         pdf_paths=pdf_paths,
     )
 
-    with st.spinner("Running MAS workflow..."):
-        final_state = run_research_workflow(initial_state)
+    final_state = _run_demo_workflow(initial_state)
 
     _render_results(final_state)
 
@@ -143,6 +145,7 @@ def _build_initial_state(
         "creator_samples": [creator_samples_text.strip()] if creator_samples_text.strip() else [],
         "required_talking_points": _split_lines(talking_points_text),
         "logs": [],
+        "tool_traces": [],
     }
 
 
@@ -168,6 +171,28 @@ def _persist_uploaded_pdfs(uploaded_pdfs: list | None) -> list[str]:
     return saved_paths
 
 
+def _run_demo_workflow(initial_state: MASState) -> MASState:
+    """Run the workflow step by step with visible Streamlit progress."""
+
+    status = st.status("Running workflow...", expanded=True)
+    current_state = initial_state
+
+    stages = [
+        ("Research Agent", run_research_agent),
+        ("Creator Style Agent", run_creator_style_agent),
+        ("Sponsorship Writer Agent", run_sponsorship_writer_agent),
+        ("Compliance Review Agent", run_compliance_review_agent),
+    ]
+
+    for label, runner in stages:
+        status.write(f"Running {label}...")
+        current_state = runner(current_state)
+        status.write(f"Completed {label}.")
+
+    status.update(label="Workflow complete", state="complete", expanded=False)
+    return current_state
+
+
 def _render_results(final_state: MASState) -> None:
     """Render workflow results in a demo-friendly layout."""
 
@@ -190,6 +215,7 @@ def _render_results(final_state: MASState) -> None:
 
     tabs = st.tabs(
         [
+            "Execution Trace",
             "Compliance Report",
             "Sponsorship Draft",
             "Research",
@@ -200,22 +226,43 @@ def _render_results(final_state: MASState) -> None:
     )
 
     with tabs[0]:
-        st.json(final_state.get("compliance_report", {}))
+        _render_tool_trace(final_state.get("tool_traces", []))
 
     with tabs[1]:
-        st.write(final_state.get("sponsorship_draft", ""))
+        st.json(final_state.get("compliance_report", {}))
 
     with tabs[2]:
-        st.json(final_state.get("sponsor_research", {}))
+        st.write(final_state.get("sponsorship_draft", ""))
 
     with tabs[3]:
-        st.json(final_state.get("creator_style_profile", {}))
+        st.json(final_state.get("sponsor_research", {}))
 
     with tabs[4]:
-        st.json(final_state.get("logs", []))
+        st.json(final_state.get("creator_style_profile", {}))
 
     with tabs[5]:
+        st.json(final_state.get("logs", []))
+
+    with tabs[6]:
         st.code(json.dumps(final_state, indent=2), language="json")
+
+
+def _render_tool_trace(tool_traces: list[dict]) -> None:
+    """Render tool traces in an agent-tool style presentation."""
+
+    if not tool_traces:
+        st.info("No tool traces captured.")
+        return
+
+    for index, trace in enumerate(tool_traces, start=1):
+        title = (
+            f"{index}. {trace['agent_name']} -> {trace['tool_name']} "
+            f"[{trace['status']}]"
+        )
+        with st.expander(title, expanded=index <= 2):
+            st.write(f"**Step:** {trace['step']}")
+            st.write(f"**Input Summary:** {trace['input_summary']}")
+            st.write(f"**Output Summary:** {trace['output_summary']}")
 
 
 if __name__ == "__main__":

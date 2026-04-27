@@ -59,6 +59,17 @@ class AgentLog(TypedDict):
     message: str
 
 
+class ToolTrace(TypedDict):
+    """Structured trace entry for a single tool invocation."""
+
+    agent_name: str
+    step: str
+    tool_name: str
+    status: str
+    input_summary: str
+    output_summary: str
+
+
 class MASState(TypedDict):
     """Global state passed across the full multi-agent workflow."""
 
@@ -77,3 +88,4 @@ class MASState(TypedDict):
     compliance_report: NotRequired[ComplianceReport]
     final_sponsorship_segment: NotRequired[str]
     logs: list[AgentLog]
+    tool_traces: list[ToolTrace]

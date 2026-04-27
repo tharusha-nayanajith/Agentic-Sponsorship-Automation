@@ -89,6 +89,7 @@ def build_initial_state(args: argparse.Namespace) -> MASState:
         "creator_samples": creator_samples,
         "required_talking_points": args.required_talking_points,
         "logs": [],
+        "tool_traces": [],
     }
 
 

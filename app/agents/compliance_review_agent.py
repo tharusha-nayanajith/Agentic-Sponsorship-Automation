@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.graph.state import AgentLog, ComplianceReport, MASState
+from app.graph.state import AgentLog, ComplianceReport, MASState, ToolTrace
 from app.tools.compliance_review_tool import (
     ComplianceReviewInput,
     review_sponsorship_segment_tool,
@@ -16,6 +16,7 @@ def run_compliance_review_agent(state: MASState) -> MASState:
     """Review the sponsorship draft and write final approval state."""
 
     logs = list(state.get("logs", []))
+    tool_traces = list(state.get("tool_traces", []))
     draft = state.get("sponsorship_draft", "")
 
     logs.append(
@@ -36,6 +37,7 @@ def run_compliance_review_agent(state: MASState) -> MASState:
         )
         updated_state = dict(state)
         updated_state["logs"] = logs
+        updated_state["tool_traces"] = tool_traces
         return updated_state
 
     sponsor_research = state.get("sponsor_research", {})
@@ -54,6 +56,23 @@ def run_compliance_review_agent(state: MASState) -> MASState:
             do_not_mimic=creator_style_profile.get("do_not_mimic", []),
         )
     )
+    tool_traces.append(
+        _tool_trace(
+            step="review",
+            tool_name="review_sponsorship_segment_tool",
+            status="success" if result.success else "failed",
+            input_summary=(
+                f"draft_chars={len(draft)}; required_mentions={len(sponsor_research.get('required_mentions', []))}"
+            ),
+            output_summary=(
+                f"approved={result.approved}; "
+                f"tone_mismatches={len(result.tone_mismatches)}; "
+                f"disclosure_issues={len(result.disclosure_issues)}"
+                if result.success
+                else (result.error_message or "Compliance review failed.")
+            ),
+        )
+    )
 
     logs.append(
         _log(
@@ -70,6 +89,7 @@ def run_compliance_review_agent(state: MASState) -> MASState:
 
     updated_state = dict(state)
     updated_state["logs"] = logs
+    updated_state["tool_traces"] = tool_traces
 
     if not result.success:
         logs.append(
@@ -120,3 +140,22 @@ def _log(
     if tool_used:
         entry["tool_used"] = tool_used
     return entry
+
+
+def _tool_trace(
+    step: str,
+    tool_name: str,
+    status: str,
+    input_summary: str,
+    output_summary: str,
+) -> ToolTrace:
+    """Create a consistent Compliance Review Agent tool trace entry."""
+
+    return {
+        "agent_name": COMPLIANCE_REVIEW_AGENT_NAME,
+        "step": step,
+        "tool_name": tool_name,
+        "status": status,
+        "input_summary": input_summary,
+        "output_summary": output_summary,
+    }
